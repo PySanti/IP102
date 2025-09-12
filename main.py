@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import torch
 import numpy as np
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 if __name__ == "__main__":
     print('Cargando rutas de imagenes')
@@ -40,14 +41,27 @@ if __name__ == "__main__":
             persistent_workers=True, 
             pin_memory=True) 
 
+    val_loader = DataLoader(
+            ImagesDataset(val_X_paths, val_Y, val_transform),
+            batch_size=BATCH_SIZE, 
+            num_workers=12, 
+            shuffle=False,
+            persistent_workers=True, 
+            pin_memory=True) 
+
+
+
     resnet = ResNet(input_dim=3).cuda()
-    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-4, momentum=0.9)
+    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9)
     criterion = torch.nn.CrossEntropyLoss()
+    scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
 
     for a in range(EPOCHS):
 
-        epochs_loss = []
+        epochs_train_loss = []
+        epochs_val_loss = []
 
+        resnet.train()
         for i, (X_batch, Y_batch) in enumerate(train_loader):
             t1 = time.time()
             X_batch, Y_batch = X_batch.cuda(), Y_batch.cuda()
@@ -59,8 +73,23 @@ if __name__ == "__main__":
             optimizer.step()
 
 
-            epochs_loss.append(loss.item())
+            epochs_train_loss.append(loss.item())
 
             print(f"Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}")
-        
-        print(f"Epoch : {a+1}, Loss : {np.mean(epochs_loss)}")
+
+
+
+        resnet.eval()
+
+        with torch.no_grad():
+            for i, (X_batch, Y_batch) in enumerate(val_loader):
+                X_batch, Y_batch = X_batch.cuda(), Y_batch.cuda()
+                output = resnet(X_batch)
+                loss = criterion(output, Y_batch)
+
+                epochs_val_loss.append(loss.item())
+
+
+
+        scheduler.step(np.mean(epochs_val_loss))        
+        print(f"Epoch : {a+1}, Train loss : {np.mean(epochs_train_loss)}, Val loss : {np.mean(epochs_val_loss)}")
