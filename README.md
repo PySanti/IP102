@@ -157,6 +157,29 @@ stds = [0.26876003294998324, 0.25613632070425424, 0.285797550958417]
 ```
 # Muestras
 
+Usando la siguiente funcion:
+
+```python
+
+# utils/show_image.py
+
+import matplotlib.pyplot as plt
+from PIL import Image
+
+def show_image(path):
+    img = Image.open(path)
+    plt.imshow(img)
+    plt.axis('off')  # Oculta los ejes
+    plt.title("Imagen con PIL")
+    plt.show()
+```
+
+Obtuve las siguientes muestras:
+
+![Muestra 1](./images/muestra_1.png)
+![Muestra 2](./images/muestra_2.png)
+![Muestra 3](./images/muestra_3.png)
+
 # Analisis de distribucion de target
 
 # Creacion de dataloaders
