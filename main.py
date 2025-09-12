@@ -24,8 +24,20 @@ if __name__ == "__main__":
 
 
     train_transformer  = transforms.Compose([
+
+        # basic resize
+        
         transforms.Resize((256, 256)), # redimensionar 
         transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        
+        # data aumentation
+
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
+        transforms.RandomRotation(15),
+
+
         transforms.ToTensor(),
         transforms.Normalize(MEANS, STDS)
     ])
@@ -33,6 +45,7 @@ if __name__ == "__main__":
     val_transform = transforms.Compose([
         transforms.Resize((256, 256)), # redimensionar 
         transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+
         transforms.ToTensor(),
         transforms.Normalize(MEANS, STDS)
     ])

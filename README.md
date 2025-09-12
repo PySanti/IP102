@@ -737,4 +737,47 @@ class ResNet(WeightsInitializer):
         return self.linear_pass(out)
 ```
 
+# Session 3: Implementacion de DataAugmentation.
+
+Usando el siguiente codigo:
+
+```python
+
+# main.py
+
+...
+
+if __name__ == "__main__":
+
+...
+
+    train_transformer  = transforms.Compose([
+
+        # basic resize
+        
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        
+        # data aumentation
+
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
+        transforms.RandomRotation(15),
+
+
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+
+```
+
+El data augmentation es una tecnica que se utiliza para transformar las imagenes existentes en el dataset, en este caso, haciendo recortes aleatorios, haciendo cambios de orientacion, etc. 
+
+El data augmentation se hace para hacer al modelo mas robusto, ante posibles casos de uso de la vida real. Para dar un ejemplo practico, es como decirle al modelo: esta persona sigue siendo una persona a pesar de estar en blanco y negro y estar rotada.
+
+Como el data augmentation ayuda a mejorar las capacidades de generalizacion del modelo, otra forma de verlo es que reduce el overfitting.
+
+
 
