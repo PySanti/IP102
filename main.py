@@ -1,7 +1,6 @@
 from utils.ImagesDataset import ImagesDataset
 from utils.MACROS import BATCH_SIZE, MEANS, STDS
 from utils.load_set import load_set
-from utils.normalization_metrics_calc import normalization_metrics_calc
 from torch.utils.data import DataLoader
 from torchvision import transforms
 

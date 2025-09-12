@@ -182,6 +182,70 @@ Obtuve las siguientes muestras:
 
 # Analisis de distribucion de target
 
+Usando la siguiente funcion:
+
+```python
+from pandas import Series
+def show_target_distribution(target_list):
+    t = Series(target_list)
+
+    for k, v in t.value_counts().items():
+        print(f"Class : {k}, Per : {v/len(target_list):.5f}")
+
+```
+
+
+Obtuvimos los siguientes resultados:
+
+```
+
+Mostrando distribucion de targets en train
+Class : 101, Per : 0.07637
+Class : 67, Per : 0.07065
+Class : 70, Per : 0.06759
+Class : 24, Per : 0.05446
+Class : 51, Per : 0.02524
+Class : 22, Per : 0.02257
+Class : 65, Per : 0.00186
+Class : 35, Per : 0.00182
+Class : 36, Per : 0.00137
+Class : 81, Per : 0.00131
+Class : 98, Per : 0.00122
+Class : 63, Per : 0.00111
+Class : 61, Per : 0.00104
+Class : 80, Per : 0.00098
+Class : 72, Per : 0.00093
+        ...
+
+
+Mostrando distribucion de targets en val
+Class : 101, Per : 0.07632
+Class : 67, Per : 0.07059
+Class : 70, Per : 0.06766
+Class : 24, Per : 0.05448
+Class : 51, Per : 0.02517
+Class : 22, Per : 0.02264
+Class : 53, Per : 0.00239
+Class : 60, Per : 0.00234
+Class : 12, Per : 0.00230
+Class : 75, Per : 0.00230
+Class : 85, Per : 0.00225
+Class : 17, Per : 0.00199
+Class : 35, Per : 0.00186
+Class : 65, Per : 0.00186
+Class : 36, Per : 0.00141
+Class : 81, Per : 0.00133
+Class : 98, Per : 0.00124
+Class : 63, Per : 0.00115
+Class : 61, Per : 0.00106
+Class : 80, Per : 0.00102
+Class : 72, Per : 0.00097
+
+        ...
+```
+
+Como se puede apreciar, las clases estan sumamente desvalanceadas, esto es algo que se tiene que tener en cuenta para el calculo de la precision y para posibles tecnicas de data augmentation.
+
 # Creacion de dataloaders
 
 Usando el siguiente codigo:
