@@ -1,4 +1,4 @@
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 # metricas calculadas sobre el conjunto de entrenamiento
 
 MEANS = [0.5058171864589405, 0.5286897495022889, 0.37927134012176345]

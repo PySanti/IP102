@@ -336,3 +336,171 @@ Se crearon los dataloaders para la generacion de batches de imagenes. Basicament
 
 El redimensionamiento es necesario para lograr que todos los tensores tengan las mismas dimensiones `(256 x 256 x 3)`.
 
+
+# Session 1 : Implementacion de ResNet.
+
+En su primera version, esta fue mi implementacion manual de `ResNet`:
+
+
+```python
+
+
+# utils/ResNet.py
+
+import torch
+from torch import nn
+
+from utils.ResBlock import ResBlock
+
+class ResNet(nn.Module):
+    def __init__(self, input_dim) -> None:
+        super(ResNet, self).__init__()
+        self.initial_convolution = nn.Sequential(
+            nn.Conv2d(input_dim, 64, kernel_size=7, stride=2, padding=3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.AvgPool2d(2)
+            )
+        self.res_pass = nn.Sequential(
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=128, downsampling=True),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            )
+        self.global_pooling = nn.AdaptiveAvgPool2d((1,1))
+        self.linear_pass = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(128, 1000),
+            nn.ReLU(),
+            nn.Linear(1000, 102)
+            )
+    def forward(self, X):
+        out = self.initial_convolution(X)
+        out = self.res_pass(out)
+        out = self.global_pooling(out)
+        return self.linear_pass(out)
+
+    def _init_weights(self):
+        pass
+```
+
+```python
+
+# utils/ResBlock.py
+
+import torch
+from torch import nn
+from torch.nn.modules import BatchNorm2d
+
+
+class ResBlock(nn.Module):
+    def __init__(self, input_channels, output_channels, downsampling):
+        super(ResBlock, self).__init__()
+        self.downsampling = None if not downsampling else nn.Sequential(
+            nn.Conv2d(input_channels, output_channels, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(output_channels)
+            )
+        self.res_pass = nn.Sequential(
+                nn.Conv2d(
+                            input_channels,
+                            output_channels, 
+                            kernel_size=3, 
+                            stride=2 if self.downsampling else 1,
+                            padding = 1),
+                nn.BatchNorm2d(output_channels),
+                nn.ReLU(),
+                nn.Conv2d(
+                            output_channels,
+                            output_channels, 
+                            kernel_size=3, 
+                            stride=1,
+                            padding = 1),
+                nn.BatchNorm2d(output_channels)
+                )
+        self.relu = nn.ReLU()
+
+    def forward(self, X):
+        out = self.res_pass(X)
+        if self.downsampling:
+            X = self.downsampling(X)
+        X = X+out
+        return self.relu(X)
+
+    def _init_weights(self):
+        pass
+```
+
+```python
+
+# main.py
+
+from utils.ImagesDataset import ImagesDataset
+import time
+from utils.MACROS import BATCH_SIZE, EPOCHS, MEANS, STDS
+from utils.ResNet import ResNet
+from utils.load_set import load_set
+from torch.utils.data import DataLoader
+from torchvision import transforms
+import torch
+import numpy as np
+
+if __name__ == "__main__":
+    print('Cargando rutas de imagenes')
+    train_X_paths, train_Y = load_set("./archive/classification","train" )
+    val_X_paths, val_Y = load_set("./archive/classification","val" )
+    test_X_paths, test_Y = load_set("./archive/classification","test" )
+
+#    means, stds = normalization_metrics_calc(train_X_paths)
+
+
+    train_transformer  = transforms.Compose([
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+    val_transform = transforms.Compose([
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+    print('Creando dataloaders')
+    train_loader = DataLoader(
+            ImagesDataset(train_X_paths, train_Y, train_transformer),
+            batch_size=BATCH_SIZE, 
+            num_workers=12, 
+            shuffle=True,
+            persistent_workers=True, 
+            pin_memory=True) 
+
+    resnet = ResNet(input_dim=3).cuda()
+    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-4, momentum=0.9)
+    criterion = torch.nn.CrossEntropyLoss()
+
+    for a in range(EPOCHS):
+
+        epochs_loss = []
+
+        for i, (X_batch, Y_batch) in enumerate(train_loader):
+            t1 = time.time()
+            X_batch, Y_batch = X_batch.cuda(), Y_batch.cuda()
+            optimizer.zero_grad()
+
+            output = resnet(X_batch)
+            loss = criterion(output, Y_batch)
+            loss.backward()
+            optimizer.step()
+
+
+            epochs_loss.append(loss.item())
+
+            print(f"Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}")
+        
+        print(f"Epoch : {a+1}, Loss : {np.mean(epochs_loss)}")
+```
