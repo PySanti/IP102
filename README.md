@@ -155,5 +155,97 @@ Obtuve los siguientes resultados:
 means = [0.5058171864589405, 0.5286897495022889, 0.37927134012176345]
 stds = [0.26876003294998324, 0.25613632070425424, 0.285797550958417]
 ```
+# Muestras
 
+# Analisis de distribucion de target
+
+# Creacion de dataloaders
+
+Usando el siguiente codigo:
+
+```python
+
+# main.py
+
+from utils.ImagesDataset import ImagesDataset
+from utils.MACROS import BATCH_SIZE, MEANS, STDS
+from utils.load_set import load_set
+from utils.normalization_metrics_calc import normalization_metrics_calc
+from torch.utils.data import DataLoader
+from torchvision import transforms
+
+if __name__ == "__main__":
+    print('Cargando rutas de imagenes')
+    train_X_paths, train_Y = load_set("./archive/classification","train" )
+    val_X_paths, val_Y = load_set("./archive/classification","val" )
+    test_X_paths, test_Y = load_set("./archive/classification","test" )
+
+#    means, stds = normalization_metrics_calc(train_X_paths)
+
+
+    train_transformer  = transforms.Compose([
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+    val_transform = transforms.Compose([
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+    print('Creando dataloaders')
+    train_loader = DataLoader(
+            ImagesDataset(train_X_paths, train_Y, train_transformer),
+            batch_size=BATCH_SIZE, 
+            num_workers=8, 
+            shuffle=True,
+            persistent_workers=True, 
+            pin_memory=True) 
+
+    print('Recorriendo dataset de entrenamiento')
+    for i, (X_batch, Y_batch) in enumerate(train_loader):
+        pass
+
+```
+
+```python
+
+# utils/ImagesDataset.py
+
+from torch.utils.data import Dataset
+from PIL import Image
+from torchvision import transforms
+
+
+
+class ImagesDataset(Dataset):
+    """
+        Wrapper para las rutas y labels de imagenes
+        para ser usado con dataloader de entrenamiento,
+        validacion y pruebas
+    """
+    def __init__(self, X, Y, transformer) -> None:
+        super().__init__()
+        self.X = X
+        self.Y = Y
+        self.transformer = transformer
+
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self,idx):
+        image = Image.open(self.X[idx]).convert('RGB')
+        trans_image = self.transformer(image)
+        image.close()
+        return trans_image, self.Y[idx]
+```
+
+Se crearon los dataloaders para la generacion de batches de imagenes. Basicamente se wrappean la lista de rutas y labels en el ImagesDataset y luego el dataloader genera batches, en el proceso de generacion de batches se llama al dunder `__getitem__` de la clase ImagesDataset, el cual abre la imagen, la redimensiona, la recorta desde el centro, la convierte a tensor y normaliza para luego retornarla.
+
+El redimensionamiento es necesario para lograr que todos los tensores tengan las mismas dimensiones `(256 x 256 x 3)`.
 
