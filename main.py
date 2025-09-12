@@ -10,6 +10,11 @@ import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 if __name__ == "__main__":
+
+
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
     print('Cargando rutas de imagenes')
     train_X_paths, train_Y = load_set("./archive/classification","train" )
     val_X_paths, val_Y = load_set("./archive/classification","val" )
@@ -51,7 +56,7 @@ if __name__ == "__main__":
 
 
 
-    resnet = ResNet(input_dim=3).cuda()
+    resnet = ResNet(input_dim=3).to(DEVICE)
     optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9)
     criterion = torch.nn.CrossEntropyLoss()
     scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
@@ -64,7 +69,7 @@ if __name__ == "__main__":
         resnet.train()
         for i, (X_batch, Y_batch) in enumerate(train_loader):
             t1 = time.time()
-            X_batch, Y_batch = X_batch.cuda(), Y_batch.cuda()
+            X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
             optimizer.zero_grad()
 
             output = resnet(X_batch)
@@ -83,7 +88,7 @@ if __name__ == "__main__":
 
         with torch.no_grad():
             for i, (X_batch, Y_batch) in enumerate(val_loader):
-                X_batch, Y_batch = X_batch.cuda(), Y_batch.cuda()
+                X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
                 output = resnet(X_batch)
                 loss = criterion(output, Y_batch)
 

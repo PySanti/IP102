@@ -608,3 +608,133 @@ if __name__ == "__main__":
         print(f"Epoch : {a+1}, Train loss : {np.mean(epochs_train_loss)}, Val loss : {np.mean(epochs_val_loss)}")
 ```
 
+
+# Session 2 : Inicializacion de pesos e implementacion final de arquitectura oficial.
+
+
+Finalmente, implementamos la arquitectura oficial del paper.
+
+```python
+
+# utils/WeightsInitializer.py
+
+from torch import nn
+from torch.nn import init
+
+class WeightsInitializer(nn.Module):
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                # Inicializa los pesos de las capas convolucionales
+                init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    # Inicializa los sesgos a cero
+                    init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                # Inicializa los pesos de batch norm a 1 y sesgos a 0
+                init.constant_(m.weight, 1)
+                init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                # Inicializa las capas lineales
+                init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    init.constant_(m.bias, 0)
+```
+
+```python
+
+# utils/ResBlock.py
+
+import torch
+from torch import nn
+from torch.nn.modules import BatchNorm2d
+
+from utils.WeightsInitializer import WeightsInitializer
+
+
+class ResBlock(WeightsInitializer):
+    def __init__(self, input_channels, output_channels, downsampling):
+        super(ResBlock, self).__init__()
+        self.downsampling = None if not downsampling else nn.Sequential(
+            nn.Conv2d(input_channels, output_channels, kernel_size=1, stride=2, padding=0),
+            nn.BatchNorm2d(output_channels)
+            )
+        self.res_pass = nn.Sequential(
+                nn.Conv2d(
+                            input_channels,
+                            output_channels, 
+                            kernel_size=3, 
+                            stride=2 if self.downsampling else 1,
+                            padding = 1),
+                nn.BatchNorm2d(output_channels),
+                nn.ReLU(),
+                nn.Conv2d(
+                            output_channels,
+                            output_channels, 
+                            kernel_size=3, 
+                            stride=1,
+                            padding = 1),
+                nn.BatchNorm2d(output_channels)
+                )
+        self.relu = nn.ReLU()
+        self._init_weights()
+
+    def forward(self, X):
+        out = self.res_pass(X)
+        if self.downsampling:
+            X = self.downsampling(X)
+        X = X+out
+        return self.relu(X)
+
+```
+
+```python
+
+# utils/ResNet.py
+
+import torch
+from torch import nn
+from utils.WeightsInitializer import WeightsInitializer
+from utils.ResBlock import ResBlock
+
+class ResNet(WeightsInitializer):
+    def __init__(self, input_dim) -> None:
+        super(ResNet, self).__init__()
+        self.initial_convolution = nn.Sequential(
+            nn.Conv2d(input_dim, 64, kernel_size=7, stride=2, padding=3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+            )
+        self.res_pass = nn.Sequential(
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=128, downsampling=True),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=256, downsampling=True),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=512, downsampling=True),
+            ResBlock(input_channels=512, output_channels=512, downsampling=False),
+            ResBlock(input_channels=512, output_channels=512, downsampling=False),
+            )
+        self.global_pooling = nn.AdaptiveAvgPool2d((1,1))
+        self.linear_pass = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(512, 102),
+            )
+        self._init_weights()
+    def forward(self, X):
+        out = self.initial_convolution(X)
+        out = self.res_pass(out)
+        out = self.global_pooling(out)
+        return self.linear_pass(out)
+```
+
+

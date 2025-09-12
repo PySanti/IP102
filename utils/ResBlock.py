@@ -2,12 +2,14 @@ import torch
 from torch import nn
 from torch.nn.modules import BatchNorm2d
 
+from utils.WeightsInitializer import WeightsInitializer
 
-class ResBlock(nn.Module):
+
+class ResBlock(WeightsInitializer):
     def __init__(self, input_channels, output_channels, downsampling):
         super(ResBlock, self).__init__()
         self.downsampling = None if not downsampling else nn.Sequential(
-            nn.Conv2d(input_channels, output_channels, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(input_channels, output_channels, kernel_size=1, stride=2, padding=0),
             nn.BatchNorm2d(output_channels)
             )
         self.res_pass = nn.Sequential(
@@ -28,6 +30,7 @@ class ResBlock(nn.Module):
                 nn.BatchNorm2d(output_channels)
                 )
         self.relu = nn.ReLU()
+        self._init_weights()
 
     def forward(self, X):
         out = self.res_pass(X)
@@ -36,5 +39,3 @@ class ResBlock(nn.Module):
         X = X+out
         return self.relu(X)
 
-    def _init_weights(self):
-        pass
