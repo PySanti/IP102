@@ -1,6 +1,6 @@
 # IP102
 
-El objetivo de este proyecto sera alcanzar la mejor precision posible en la clasificacion de imagenes del ![dataset IP102](https://www.kaggle.com/datasets/rtlmhjbn/ip02-dataset?select=val.txt).
+El objetivo de este proyecto sera alcanzar la mejor precision posible en la clasificacion de imagenes del [dataset IP102](https://www.kaggle.com/datasets/rtlmhjbn/ip02-dataset?select=val.txt).
 
 Este dataset tiene la siguiente descripcion:
 
