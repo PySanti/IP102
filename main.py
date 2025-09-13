@@ -1,4 +1,5 @@
 from utils.ImagesDataset import ImagesDataset
+from utils.plot_model_performance import plot_model_performance
 import time
 from utils.MACROS import BATCH_SIZE, EPOCHS, MEANS, STDS
 from utils.ResNet import ResNet
@@ -75,6 +76,9 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss()
     scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
 
+    epochs_train_loss = []
+    epochs_val_loss = []
+
     for a in range(EPOCHS):
 
         batches_train_loss = []
@@ -123,3 +127,8 @@ if __name__ == "__main__":
                     Val prec : {np.mean(batches_val_prec)}
 
                     """)
+        epochs_train_loss.append(np.mean(batches_train_loss))
+        epochs_val_loss.append(np.mean(batches_val_loss))
+    torch.save(resnet, "./resnet.pth")
+
+    plot_model_performance(epochs_train_loss, epochs_val_loss)
