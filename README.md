@@ -781,3 +781,41 @@ Como el data augmentation ayuda a mejorar las capacidades de generalizacion del 
 
 
 
+# Session 4: Implementacion de metrica de precision.
+
+Usando el siguiente codigo:
+
+```python
+
+...
+
+if __name__ == "__main__":
+
+...
+        resnet.eval()
+
+        with torch.no_grad():
+            for i, (X_batch, Y_batch) in enumerate(val_loader):
+                X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
+                output = resnet(X_batch)
+                loss = criterion(output, Y_batch)
+
+                batches_val_loss.append(loss.item())
+
+                _, predicted_labels = torch.max(output, 1)
+                ps = precision_score(Y_batch.to('cpu'), predicted_labels.to('cpu'), average='macro',  zero_division=0)
+                batches_val_prec.append(ps)
+
+
+        print("\n\n")
+        scheduler.step(np.mean(batches_val_loss))        
+        print(f"""Epoch : {a+1}
+
+                    Train loss : {np.mean(batches_train_loss)}
+                    Val loss : {np.mean(batches_val_loss)}
+                    Val prec : {np.mean(batches_val_prec)}
+
+                    """)
+```
+
+Usando la funcion `precision_score` de sklearn se toma la precision del modelo para cada clase y se promedia (usando el parametro `average='macro'`).

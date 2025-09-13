@@ -8,6 +8,8 @@ from torchvision import transforms
 import torch
 import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from sklearn.metrics import precision_score
+
 
 if __name__ == "__main__":
 
@@ -54,7 +56,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(
             ImagesDataset(train_X_paths, train_Y, train_transformer),
             batch_size=BATCH_SIZE, 
-            num_workers=12, 
+            num_workers=8, 
             shuffle=True,
             persistent_workers=True, 
             pin_memory=True) 
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     val_loader = DataLoader(
             ImagesDataset(val_X_paths, val_Y, val_transform),
             batch_size=BATCH_SIZE, 
-            num_workers=12, 
+            num_workers=8, 
             shuffle=False,
             persistent_workers=True, 
             pin_memory=True) 
@@ -70,14 +72,15 @@ if __name__ == "__main__":
 
 
     resnet = ResNet(input_dim=3).to(DEVICE)
-    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9)
+    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9, weight_decay=5e-4)
     criterion = torch.nn.CrossEntropyLoss()
     scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
 
     for a in range(EPOCHS):
 
-        epochs_train_loss = []
-        epochs_val_loss = []
+        batches_train_loss = []
+        batches_val_loss = []
+        batches_val_prec = []
 
         resnet.train()
         for i, (X_batch, Y_batch) in enumerate(train_loader):
@@ -91,9 +94,9 @@ if __name__ == "__main__":
             optimizer.step()
 
 
-            epochs_train_loss.append(loss.item())
+            batches_train_loss.append(loss.item())
 
-            print(f"Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}")
+            print(f"Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}", end="\r")
 
 
 
@@ -105,9 +108,19 @@ if __name__ == "__main__":
                 output = resnet(X_batch)
                 loss = criterion(output, Y_batch)
 
-                epochs_val_loss.append(loss.item())
+                batches_val_loss.append(loss.item())
+
+                _, predicted_labels = torch.max(output, 1)
+                ps = precision_score(Y_batch.to('cpu'), predicted_labels.to('cpu'), average='macro',  zero_division=0)
+                batches_val_prec.append(ps)
 
 
+        print("\n\n")
+        scheduler.step(np.mean(batches_val_loss))        
+        print(f"""Epoch : {a+1}
 
-        scheduler.step(np.mean(epochs_val_loss))        
-        print(f"Epoch : {a+1}, Train loss : {np.mean(epochs_train_loss)}, Val loss : {np.mean(epochs_val_loss)}")
+                    Train loss : {np.mean(batches_train_loss)}
+                    Val loss : {np.mean(batches_val_loss)}
+                    Val prec : {np.mean(batches_val_prec)}
+
+                    """)
