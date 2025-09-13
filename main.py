@@ -34,7 +34,6 @@ if __name__ == "__main__":
         
         # data aumentation
 
-        transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
         transforms.RandomRotation(15),
