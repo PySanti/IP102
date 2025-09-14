@@ -819,3 +819,210 @@ if __name__ == "__main__":
 ```
 
 Usando la funcion `precision_score` de sklearn se toma la precision del modelo para cada clase y se promedia (usando el parametro `average='macro'`).
+
+# Session 5 : primeras pruebas con ResNet34.
+
+Finalmente, esta termino siendo la arquitectura:
+
+```python
+
+
+class ResNet34(WeightsInitializer):
+    def __init__(self, input_dim) -> None:
+        super(ResNet34, self).__init__()
+        self.initial_convolution = nn.Sequential(
+            nn.Conv2d(input_dim, 64, kernel_size=7, stride=2, padding=3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+            )
+        self.res_pass = nn.Sequential(
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=64, downsampling=False),
+            ResBlock(input_channels=64, output_channels=128, downsampling=True),
+            DropBlock2D(0.3, block_size=15),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=128, downsampling=False),
+            ResBlock(input_channels=128, output_channels=256, downsampling=True),
+            DropBlock2D(0.3, block_size=8),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=256, downsampling=False),
+            ResBlock(input_channels=256, output_channels=512, downsampling=True),
+            DropBlock2D(0.3, block_size=4),
+            ResBlock(input_channels=512, output_channels=512, downsampling=False),
+            ResBlock(input_channels=512, output_channels=512, downsampling=False),
+            )
+        self.global_pooling = nn.AdaptiveAvgPool2d((1,1))
+        self.linear_pass = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(512, 102),
+            )
+        self._init_weights()
+    def forward(self, X):
+        out = self.initial_convolution(X)
+        out = self.res_pass(out)
+        out = self.global_pooling(out)
+        return self.linear_pass(out)
+
+```
+
+
+```python
+
+from utils.ImagesDataset import ImagesDataset
+from utils.plot_model_performance import plot_model_performance
+import time
+from utils.MACROS import BATCH_SIZE, EPOCHS, MEANS, STDS
+from utils.resnets.ResNet34 import ResNet34
+from utils.load_set import load_set
+from torch.utils.data import DataLoader
+from torchvision import transforms
+import torch
+import numpy as np
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from sklearn.metrics import precision_score
+
+
+if __name__ == "__main__":
+
+
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+    print('Cargando rutas de imagenes')
+    train_X_paths, train_Y = load_set("./archive/classification","train" )
+    val_X_paths, val_Y = load_set("./archive/classification","val" )
+    test_X_paths, test_Y = load_set("./archive/classification","test" )
+
+#    means, stds = normalization_metrics_calc(train_X_paths)
+
+
+    train_transformer  = transforms.Compose([
+
+        # basic resize
+        
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+        
+        # data aumentation
+
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
+        transforms.RandomRotation(15),
+
+
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+    val_transform = transforms.Compose([
+        transforms.Resize((256, 256)), # redimensionar 
+        transforms.CenterCrop((224, 224)), # recordar desde el centro para consistencia
+
+        transforms.ToTensor(),
+        transforms.Normalize(MEANS, STDS)
+    ])
+
+    print('Creando dataloaders')
+    train_loader = DataLoader(
+            ImagesDataset(train_X_paths, train_Y, train_transformer),
+            batch_size=BATCH_SIZE, 
+            num_workers=12, 
+            shuffle=True,
+            persistent_workers=True, 
+            pin_memory=True) 
+
+    val_loader = DataLoader(
+            ImagesDataset(val_X_paths, val_Y, val_transform),
+            batch_size=BATCH_SIZE, 
+            num_workers=12, 
+            shuffle=False,
+            persistent_workers=True, 
+            pin_memory=True) 
+
+
+
+    resnet = ResNet34(input_dim=3).to(DEVICE)
+    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9, weight_decay=5e-4)
+    criterion = torch.nn.CrossEntropyLoss()
+    scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
+
+    epochs_train_loss = []
+    epochs_val_loss = []
+
+    for a in range(EPOCHS):
+
+        batches_train_loss = []
+        batches_val_loss = []
+        batches_val_prec = []
+
+        resnet.train()
+        for i, (X_batch, Y_batch) in enumerate(train_loader):
+            t1 = time.time()
+            X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
+            optimizer.zero_grad()
+
+            output = resnet(X_batch)
+            loss = criterion(output, Y_batch)
+            loss.backward()
+            optimizer.step()
+
+
+            batches_train_loss.append(loss.item())
+
+            print(f"Train Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}", end="\r")
+
+
+
+        resnet.eval()
+
+        print("\n\n")
+
+        with torch.no_grad():
+            for i, (X_batch, Y_batch) in enumerate(val_loader):
+                t1 = time.time()
+                X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
+                output = resnet(X_batch)
+                loss = criterion(output, Y_batch)
+
+                batches_val_loss.append(loss.item())
+
+                _, predicted_labels = torch.max(output, 1)
+                ps = precision_score(Y_batch.to('cpu'), predicted_labels.to('cpu'), average='macro',  zero_division=0)
+                batches_val_prec.append(ps)
+
+                print(f"Val Batch : {i}/{len(val_loader)}, Time : {time.time()-t1}", end="\r")
+
+
+        print("\n\n")
+        scheduler.step(np.mean(batches_val_loss))        
+        print(f"""Epoch : {a+1}
+
+                    Train loss : {np.mean(batches_train_loss)}
+                    Val loss : {np.mean(batches_val_loss)}
+                    Val prec : {np.mean(batches_val_prec)}
+
+                    """)
+        epochs_train_loss.append(np.mean(batches_train_loss))
+        epochs_val_loss.append(np.mean(batches_val_loss))
+    torch.save(resnet, "./resnet34.pth")
+
+    plot_model_performance(epochs_train_loss, epochs_val_loss)
+```
+
+Con ella se lograron los siguientes resultados:
+
+```
+Epoch : 150
+
+                    Train loss : 0.9101786265981958
+                    Val loss : 1.4869100049895756
+                    Val prec : 0.12333178385395152
+```
+
+![ResNet34 1](./images/resnet_1.png)
