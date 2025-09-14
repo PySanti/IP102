@@ -2,7 +2,7 @@ from utils.ImagesDataset import ImagesDataset
 from utils.plot_model_performance import plot_model_performance
 import time
 from utils.MACROS import BATCH_SIZE, EPOCHS, MEANS, STDS
-from utils.ResNet import ResNet
+from utils.resnets.ResNet import ResNet
 from utils.load_set import load_set
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(
             ImagesDataset(train_X_paths, train_Y, train_transformer),
             batch_size=BATCH_SIZE, 
-            num_workers=8, 
+            num_workers=6, 
             shuffle=True,
             persistent_workers=True, 
             pin_memory=True) 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     val_loader = DataLoader(
             ImagesDataset(val_X_paths, val_Y, val_transform),
             batch_size=BATCH_SIZE, 
-            num_workers=8, 
+            num_workers=6, 
             shuffle=False,
             persistent_workers=True, 
             pin_memory=True) 

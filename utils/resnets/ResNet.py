@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from utils.WeightsInitializer import WeightsInitializer
-from utils.ResBlock import ResBlock
+from utils.resnets.ResBlock import ResBlock
 
 class ResNet(WeightsInitializer):
     def __init__(self, input_dim) -> None:
