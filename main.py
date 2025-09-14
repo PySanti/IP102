@@ -2,7 +2,7 @@ from utils.ImagesDataset import ImagesDataset
 from utils.plot_model_performance import plot_model_performance
 import time
 from utils.MACROS import BATCH_SIZE, EPOCHS, MEANS, STDS
-from utils.resnets.ResNet import ResNet
+from utils.resnets.ResNet34 import ResNet34
 from utils.load_set import load_set
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(
             ImagesDataset(train_X_paths, train_Y, train_transformer),
             batch_size=BATCH_SIZE, 
-            num_workers=6, 
+            num_workers=12, 
             shuffle=True,
             persistent_workers=True, 
             pin_memory=True) 
@@ -64,14 +64,14 @@ if __name__ == "__main__":
     val_loader = DataLoader(
             ImagesDataset(val_X_paths, val_Y, val_transform),
             batch_size=BATCH_SIZE, 
-            num_workers=6, 
+            num_workers=12, 
             shuffle=False,
             persistent_workers=True, 
             pin_memory=True) 
 
 
 
-    resnet = ResNet(input_dim=3).to(DEVICE)
+    resnet = ResNet34(input_dim=3).to(DEVICE)
     optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9, weight_decay=5e-4)
     criterion = torch.nn.CrossEntropyLoss()
     scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
@@ -99,14 +99,17 @@ if __name__ == "__main__":
 
             batches_train_loss.append(loss.item())
 
-            print(f"Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}", end="\r")
+            print(f"Train Batch : {i}/{len(train_loader)}, Time : {time.time()-t1}", end="\r")
 
 
 
         resnet.eval()
 
+        print("\n\n")
+
         with torch.no_grad():
             for i, (X_batch, Y_batch) in enumerate(val_loader):
+                t1 = time.time()
                 X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
                 output = resnet(X_batch)
                 loss = criterion(output, Y_batch)
@@ -116,6 +119,8 @@ if __name__ == "__main__":
                 _, predicted_labels = torch.max(output, 1)
                 ps = precision_score(Y_batch.to('cpu'), predicted_labels.to('cpu'), average='macro',  zero_division=0)
                 batches_val_prec.append(ps)
+
+                print(f"Val Batch : {i}/{len(val_loader)}, Time : {time.time()-t1}", end="\r")
 
 
         print("\n\n")
@@ -129,6 +134,6 @@ if __name__ == "__main__":
                     """)
         epochs_train_loss.append(np.mean(batches_train_loss))
         epochs_val_loss.append(np.mean(batches_val_loss))
-    torch.save(resnet, "./resnet.pth")
+    torch.save(resnet, "./resnet34.pth")
 
     plot_model_performance(epochs_train_loss, epochs_val_loss)
