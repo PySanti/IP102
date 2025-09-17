@@ -17,13 +17,13 @@ class DenseNet121(WeightsInitializer):
         for i,dl in enumerate(dense_layers):
             self.dense_pass.append(DenseBlock(in_channels=out,growth_rate=k,num_layers=dl))
             if i != len(dense_layers)-1:
-                self.dense_pass.append(DenseTransition(in_channels=out + dl*k, compression=compression))
+                self.dense_pass.append(DenseTransition(in_channels=int(out + dl*k), compression=compression))
                 out = (out + dl*k)*compression
 
         self.linear_pass = nn.Sequential(
                 nn.AdaptiveAvgPool2d((1,1)),
                 nn.Flatten(),
-                nn.Linear(out + dense_layers[-1]*k, 102),
+                nn.Linear(int(out + dense_layers[-1]*k), 102),
                 )
         self._init_weights()
 

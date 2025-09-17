@@ -2,7 +2,7 @@ from utils.ImagesDataset import ImagesDataset
 from utils.plot_model_performance import plot_model_performance
 import time
 from utils.MACROS import BATCH_SIZE, EPOCHS, MEANS, STDS
-from utils.resnets.ResNet34 import ResNet34
+from utils.densnets.DenseNet121 import DenseNet121
 from utils.load_set import load_set
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
 
 
-    resnet = ResNet34(input_dim=3).to(DEVICE)
-    optimizer = torch.optim.SGD(resnet.parameters(), lr=5e-2, momentum=0.9, weight_decay=5e-4)
+    densenet = DenseNet121(in_channels=3).to(DEVICE)
+    optimizer = torch.optim.Adam(densenet.parameters(), lr=5e-2, weight_decay=5e-4)
     criterion = torch.nn.CrossEntropyLoss()
     scheduler = ReduceLROnPlateau(optimizer, mode='min',patience=8, min_lr=1e-4 )
 
@@ -85,13 +85,13 @@ if __name__ == "__main__":
         batches_val_loss = []
         batches_val_prec = []
 
-        resnet.train()
+        densenet.train()
         for i, (X_batch, Y_batch) in enumerate(train_loader):
             t1 = time.time()
             X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
             optimizer.zero_grad()
 
-            output = resnet(X_batch)
+            output = densenet(X_batch)
             loss = criterion(output, Y_batch)
             loss.backward()
             optimizer.step()
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
 
 
-        resnet.eval()
+        densenet.eval()
 
         print("\n\n")
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
             for i, (X_batch, Y_batch) in enumerate(val_loader):
                 t1 = time.time()
                 X_batch, Y_batch = X_batch.to(DEVICE), Y_batch.to(DEVICE)
-                output = resnet(X_batch)
+                output = densenet(X_batch)
                 loss = criterion(output, Y_batch)
 
                 batches_val_loss.append(loss.item())
@@ -134,6 +134,6 @@ if __name__ == "__main__":
                     """)
         epochs_train_loss.append(np.mean(batches_train_loss))
         epochs_val_loss.append(np.mean(batches_val_loss))
-    torch.save(resnet, "./resnet34.pth")
+    torch.save(densenet, "./densenet121.pth")
 
     plot_model_performance(epochs_train_loss, epochs_val_loss)

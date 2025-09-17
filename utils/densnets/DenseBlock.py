@@ -11,7 +11,7 @@ class DenseBlock(WeightsInitializer):
         self.conv_pass = nn.Sequential()
         for i in range(num_layers):
             self.conv_pass.append(DenseLayer(
-                in_channels=in_channels+i*growth_rate,
+                in_channels=int(in_channels+i*growth_rate),
                 k=growth_rate
                 ))
 
