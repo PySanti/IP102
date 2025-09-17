@@ -1,3 +1,4 @@
+
 # IP102
 
 El objetivo de este proyecto sera practicar la implementacion manual (sin transfer learning) de diferentes arquitecturas basadas en CNNs (Convolutional Neural Networks) sobre el [dataset IP102](https://www.kaggle.com/datasets/rtlmhjbn/ip02-dataset?select=val.txt) sin necesariamente buscar las mayores precisiones.
@@ -82,7 +83,7 @@ def load_set(data_path, set_type):
 
 ```
 
-# Cálculo de métricas para normalizacion
+# Cálculo de métricas para normalización
 
 Para normalizar correctamente los registros de entrenamiento, validación y pruebas, se debe primero encontrar la media y desviación estándar por canal en el conjunto de entrenamiento. Usando el siguiente código:
 
@@ -176,7 +177,7 @@ Obtuve las siguientes muestras:
 ![Muestra 2](./images/muestra_2.png)
 ![Muestra 3](./images/muestra_3.png)
 
-# Análisis de distribucion de target
+# Análisis de distribución de target
 
 Usando la siguiente función:
 
@@ -335,7 +336,7 @@ El redimensionamiento es necesario para lograr que todos los tensores tengan las
 
 # Session 1 : Implementación de ResNet.
 
-En su primera version, esta fue mi implementacion manual de `ResNet`:
+En su primera versión, esta fue mi implementacion manual de `ResNet`:
 
 
 ```python
@@ -1025,7 +1026,7 @@ Epoch : 150
 
 # Implementación de DensetNet121
 
-Usando el siguiente código, se implemento `DenseNet121`:
+Usando el siguiente código, se implementó `DenseNet121`:
 
 ```python
 
