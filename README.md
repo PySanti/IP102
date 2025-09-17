@@ -2,7 +2,7 @@
 
 El objetivo de este proyecto sera practicar la implementacion manual (sin transfer learning) de diferentes arquitecturas basadas en CNNs (Convolutional Neural Networks) sobre el [dataset IP102](https://www.kaggle.com/datasets/rtlmhjbn/ip02-dataset?select=val.txt) sin necesariamente buscar las mayores precisiones.
 
-Este dataset tiene la siguiente descripcion:
+Este dataset tiene la siguiente descripción:
 
 "*Context*
 
@@ -13,17 +13,17 @@ Este dataset tiene la siguiente descripcion:
 *IP02 dataset has 75,222 images and average size of 737 samples per class. The dataset has a split of 6:1:3. There are 8 super classes. Rice, Corn, Wheat, Beet, Alfalfa belong to Field Crop(FC) and Vitis, Citrus, Mango belong to Economic Crop(EC).*"
 
 Resumen:
-    * El dataset contiene un total de 75.222 imagenes distribuidas en 102 clases (no balanceadas)
+    * El dataset contiene un total de 75.222 imágenes distribuidas en 102 clases (no balanceadas)
     * Hay 8 superclases: "Rice, Corn, Wheat, Beet, Alfalfa belong to Field Crop(FC) and Vitis, Citrus, Mango belong to Economic Crop(EC) "
-    * El dataset tiene una proporcion de 6:1:3 (60% train, 10% val, 30% test)
+    * El dataset tiene una proporción de 6:1:3 (60% train, 10% val, 30% test)
 
-En este proyecto se implementaran diferentes arquitecturas y tecnicas de deep learning basadas en CNNs, entre ellas:
+En este proyecto se implementaran diferentes arquitecturas y técnicas de deep learning basadas en CNNs, entre ellas:
 
 * ResNet
 * DenseNet
 
 
-Por otro lado, se implementaran tecnicas para favorecer el aprendizaje:
+Por otro lado, se implementaron técnicas para favorecer el aprendizaje:
 
 * LR Scheduling
 * Weights Initialization
@@ -57,7 +57,7 @@ La estructura de la carpeta que contiene la data (`archive/`), es la siguiente:
 
 ```
 
-Para almacenar las rutas de las imagenes usamos el siguiente codigo:
+Para almacenar las rutas de las imágenes usamos el siguiente código:
 
 ```python
 # utils/load_set.py
@@ -82,9 +82,9 @@ def load_set(data_path, set_type):
 
 ```
 
-# Calculo de metricas para normalizacion
+# Cálculo de métricas para normalizacion
 
-Para normalizar correctamente los registros de entrenamiento, validacion y pruebas, se debe primero encontrar la media y desviacion estandar por canal en el conjunto de entrenamiento. Usando el siguiente codigo:
+Para normalizar correctamente los registros de entrenamiento, validación y pruebas, se debe primero encontrar la media y desviación estándar por canal en el conjunto de entrenamiento. Usando el siguiente código:
 
 
 ```python
@@ -131,7 +131,7 @@ import numpy as np
 class PathsDataset(Dataset):
     """
         Dataset creado para wrapear las rutas de las
-        imagenes de entrenamiento para el calculo de media y desviacion estandar
+        imagenes de entrenamiento para el calculo de media y desviación estándar
     """
     def __init__(self, X) -> None:
         self.x_data = X
@@ -153,7 +153,7 @@ stds = [0.26876003294998324, 0.25613632070425424, 0.285797550958417]
 ```
 # Muestras
 
-Usando la siguiente funcion:
+Usando la siguiente función:
 
 ```python
 
@@ -176,9 +176,9 @@ Obtuve las siguientes muestras:
 ![Muestra 2](./images/muestra_2.png)
 ![Muestra 3](./images/muestra_3.png)
 
-# Analisis de distribucion de target
+# Análisis de distribucion de target
 
-Usando la siguiente funcion:
+Usando la siguiente función:
 
 ```python
 from pandas import Series
@@ -195,7 +195,7 @@ Obtuvimos los siguientes resultados:
 
 ```
 
-Mostrando distribucion de targets en train
+Mostrando distribución de targets en train
 Class : 101, Per : 0.07637
 Class : 67, Per : 0.07065
 Class : 70, Per : 0.06759
@@ -214,7 +214,7 @@ Class : 72, Per : 0.00093
         ...
 
 
-Mostrando distribucion de targets en val
+Mostrando distribución de targets en val
 Class : 101, Per : 0.07632
 Class : 67, Per : 0.07059
 Class : 70, Per : 0.06766
@@ -240,11 +240,11 @@ Class : 72, Per : 0.00097
         ...
 ```
 
-Como se puede apreciar, las clases estan sumamente desvalanceadas, esto es algo que se tiene que tener en cuenta para el calculo de la precision y para posibles tecnicas de data augmentation.
+Como se puede apreciar, las clases están sumamente desbalanceadas, esto es algo que se tiene que tener en cuenta para el cálculo de la precisión y para posibles técnicas de data augmentation.
 
-# Creacion de dataloaders
+# Creación de dataloaders
 
-Usando el siguiente codigo:
+Usando el siguiente código:
 
 ```python
 
@@ -328,12 +328,12 @@ class ImagesDataset(Dataset):
         return trans_image, self.Y[idx]
 ```
 
-Se crearon los dataloaders para la generacion de batches de imagenes. Basicamente se wrappean la lista de rutas y labels en el ImagesDataset y luego el dataloader genera batches, en el proceso de generacion de batches se llama al dunder `__getitem__` de la clase ImagesDataset, el cual abre la imagen, la redimensiona, la recorta desde el centro, la convierte a tensor y normaliza para luego retornarla.
+Se crearon los dataloaders para la generación de batches de imágenes. Básicamente se wrappean la lista de rutas y labels en el ImagesDataset y luego el dataloader genera batches, en el proceso de generación de batches se llama al dunder `__getitem__` de la clase ImagesDataset, el cual abre la imagen, la redimensiona, la recorta desde el centro, la convierte a tensor y normaliza para luego retornarla.
 
 El redimensionamiento es necesario para lograr que todos los tensores tengan las mismas dimensiones `(256 x 256 x 3)`.
 
 
-# Session 1 : Implementacion de ResNet.
+# Session 1 : Implementación de ResNet.
 
 En su primera version, esta fue mi implementacion manual de `ResNet`:
 
@@ -501,7 +501,7 @@ if __name__ == "__main__":
         print(f"Epoch : {a+1}, Loss : {np.mean(epochs_loss)}")
 ```
 
-Luego se implemento LRScheduling y procesamiento del conjunto de validacion:
+Luego se implementó LR Scheduling y procesamiento del conjunto de validación:
 
 ```python
 
@@ -605,7 +605,7 @@ if __name__ == "__main__":
 ```
 
 
-# Session 2 : Inicializacion de pesos e implementacion final de arquitectura oficial.
+# Session 2 : Inicialización de pesos e implementación final de arquitectura oficial.
 
 
 Finalmente, implementamos la arquitectura oficial del paper.
@@ -733,9 +733,9 @@ class ResNet(WeightsInitializer):
         return self.linear_pass(out)
 ```
 
-# Session 3: Implementacion de DataAugmentation.
+# Session 3: Implementación de DataAugmentation.
 
-Usando el siguiente codigo:
+Usando el siguiente código:
 
 ```python
 
@@ -769,17 +769,17 @@ if __name__ == "__main__":
 
 ```
 
-El data augmentation es una tecnica que se utiliza para transformar las imagenes existentes en el dataset, en este caso, haciendo recortes aleatorios, haciendo cambios de orientacion, etc. 
+El data augmentation es una técnica que se utiliza para transformar las imágenes existentes en el dataset, en este caso, haciendo recortes aleatorios, haciendo cambios de orientación, etc. 
 
-El data augmentation se hace para hacer al modelo mas robusto, ante posibles casos de uso de la vida real. Para dar un ejemplo practico, es como decirle al modelo: esta persona sigue siendo una persona a pesar de estar en blanco y negro y estar rotada.
+El data augmentation se hace para hacer al modelo más robusto, ante posibles casos de uso de la vida real. Para dar un ejemplo practico, es como decirle al modelo: esta persona sigue siendo una persona a pesar de estar en blanco y negro y estar rotada.
 
-Como el data augmentation ayuda a mejorar las capacidades de generalizacion del modelo, otra forma de verlo es que reduce el overfitting.
+Como el data augmentation ayuda a mejorar las capacidades de generalización del modelo, otra forma de verlo es que reduce el overfitting.
 
 
 
-# Session 4: Implementacion de metrica de precision.
+# Session 4: Implementación de métrica de precisión.
 
-Usando el siguiente codigo:
+Usando el siguiente código:
 
 ```python
 
@@ -814,11 +814,11 @@ if __name__ == "__main__":
                     """)
 ```
 
-Usando la funcion `precision_score` de sklearn se toma la precision del modelo para cada clase y se promedia (usando el parametro `average='macro'`).
+Usando la función `precision_score` de sklearn se toma la precisión del modelo para cada clase y se promedia (usando el parámetro `average='macro'`).
 
 # Session 5 : primeras pruebas con ResNet34.
 
-Finalmente, esta termino siendo la arquitectura:
+Finalmente, esta terminó siendo la arquitectura:
 
 ```python
 
@@ -1023,9 +1023,9 @@ Epoch : 150
 
 ![ResNet34 1](./images/resnet_1.png)
 
-# Implementacion de DensetNet121
+# Implementación de DensetNet121
 
-Usando el siguiente codigo, se implemento `DenseNet121`:
+Usando el siguiente código, se implemento `DenseNet121`:
 
 ```python
 
@@ -1067,4 +1067,5 @@ class DenseNet121(WeightsInitializer):
         return out
 ```
 
-Teniendo en cuenta que el objetivo principal de este proyecto era practicar la implementacion sin necesariamente alcanzar las mayores precisiones, queda hasta aqui.
+Teniendo en cuenta que el objetivo principal de este proyecto era practicar la implementación sin necesariamente alcanzar las mayores precisiones, queda hasta aquí.
+
